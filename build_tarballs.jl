@@ -59,10 +59,10 @@ products = prefix -> [
 
 
 # Build the given platforms using the given sources
-hashes = autobuild(pwd(), "SundialsBuilder", platforms, sources, script, products)
+hashes = autobuild(pwd(), "Sundials", platforms, sources, script, products)
 
 if !isempty(get(ENV,"TRAVIS_TAG",""))
     print_buildjl(pwd(), products, hashes,
-        "https://github.com/tshort/SundialsBuilderTest/releases/download/$(ENV["TRAVIS_TAG"])")
+        "https://github.com/tshort/SundialsBuilder/releases/download/$(ENV["TRAVIS_TAG"])")
 end
 
