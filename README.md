@@ -1,4 +1,4 @@
-# SundialsBuilderTest
+# SundialsBuilder
 
 [![Build Status](https://travis-ci.org/tshort/SundialsBuilder.svg?branch=master)](https://travis-ci.org/tshort/SundialsBuilder)
 
