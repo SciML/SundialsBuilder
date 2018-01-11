@@ -34,6 +34,8 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DEXAMPLES_ENABLE=OFF ..
 make -j8
 make install
+mkdir $WORKSPACE/destdir/bin
+mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
 
 """
 
@@ -63,6 +65,6 @@ hashes = autobuild(pwd(), "Sundials", platforms, sources, script, products)
 
 if !isempty(get(ENV,"TRAVIS_TAG",""))
     print_buildjl(pwd(), products, hashes,
-        "https://github.com/tshort/SundialsBuilder/releases/download/$(ENV["TRAVIS_TAG"])")
+        "https://github.com/JuliaDiffEq/SundialsBuilder/releases/download/$(ENV["TRAVIS_TAG"])")
 end
 
