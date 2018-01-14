@@ -36,5 +36,5 @@ deploy:
     file: products/*
     skip_cleanup: true
     on:
-        repo: tshort/SundialsBuilderTest
+        repo: JuliaDiffEq/SundialsBuilderTest
         tags: true
