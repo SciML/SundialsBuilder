@@ -2,14 +2,14 @@ using BinaryBuilder
 
 # These are the platforms built inside the wizard
 platforms = [
-    BinaryProvider.Linux(:i686, :glibc),
+  BinaryProvider.Windows(:x86_64),
+  BinaryProvider.Windows(:i686),
   BinaryProvider.Linux(:x86_64, :glibc),
+  BinaryProvider.MacOS(),
+  BinaryProvider.Linux(:i686, :glibc),
   BinaryProvider.Linux(:aarch64, :glibc),
   BinaryProvider.Linux(:armv7l, :glibc),
   BinaryProvider.Linux(:powerpc64le, :glibc),
-  BinaryProvider.MacOS(),
-  BinaryProvider.Windows(:i686),
-  BinaryProvider.Windows(:x86_64)
 ]
 
 
@@ -31,7 +31,7 @@ cd $WORKSPACE/srcdir
 cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DEXAMPLES_ENABLE=OFF ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF ..
 make -j8
 make install
 mkdir $WORKSPACE/destdir/bin
