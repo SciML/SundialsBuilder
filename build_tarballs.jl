@@ -84,10 +84,12 @@ mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
 """
 
 products = prefix -> [
+    LibraryProduct(prefix,"libbtf"),
     LibraryProduct(prefix,"libsundials_sunlinsolspfgmr"),
     LibraryProduct(prefix,"libsundials_ida"),
     LibraryProduct(prefix,"libsundials_cvode"),
     LibraryProduct(prefix,"libsundials_cvodes"),
+    LibraryProduct(prefix,"libcolamd"),
     LibraryProduct(prefix,"libsundials_sunmatrixdense"),
     LibraryProduct(prefix,"libsundials_sunlinsolspbcgs"),
     LibraryProduct(prefix,"libsundials_idas"),
@@ -100,7 +102,10 @@ products = prefix -> [
     LibraryProduct(prefix,"libsundials_sunlinsolband"),
     LibraryProduct(prefix,"libsundials_sunmatrixband"),
     LibraryProduct(prefix,"libsundials_kinsol"),
-    LibraryProduct(prefix,"libsundials_arkode")
+    LibraryProduct(prefix,"libsundials_arkode"),
+    LibraryProduct(prefix,"libklu"),
+    LibraryProduct(prefix,"libsuitesparseconfig"),
+    LibraryProduct(prefix,"libamd")
 ]
 
 
