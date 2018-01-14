@@ -77,7 +77,7 @@ mkdir build
 cd build
 
 if [ $target = "i686-w64-mingw32" ]; then
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON DKLU_INCLUDE_DIR=$WORKSPACE/srcdir/SuiteSparse/KLU/Include/ -DKLU_LIBRARY_DIR=$WORKSPACE/srcdir/SuiteSparse/lib -SUNDIALS_INDEX_TYPE=int32_t ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON DKLU_INCLUDE_DIR=$WORKSPACE/srcdir/SuiteSparse/KLU/Include/ -DKLU_LIBRARY_DIR=$WORKSPACE/srcdir/SuiteSparse/lib -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
 cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON DKLU_INCLUDE_DIR=$WORKSPACE/srcdir/SuiteSparse/KLU/Include/ -DKLU_LIBRARY_DIR=$WORKSPACE/srcdir/SuiteSparse/lib ..
 fi
