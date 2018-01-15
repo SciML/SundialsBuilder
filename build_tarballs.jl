@@ -24,8 +24,8 @@ info("Building for $(join(triplet.(platforms), ", "))")
 sources = [
     "https://computation.llnl.gov/projects/sundials/download/sundials-3.1.0.tar.gz" =>
     "18d52f8f329626f77b99b8bf91e05b7d16b49fde2483d3a0ea55496ce4cdd43a",
-    "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-5.0.0.tar.gz" =>
-    "7162e3a9fda729b3d46183307e93326e3cde726c72b1ec79a973060b16e6b3be",
+    "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.5.3.tar.gz" =>
+    "6199a3a35fbce82b155fd2349cf81d2b7cddaf0dac218c08cb172f9bc143f37a",
 ]
 
 script = raw"""
@@ -70,6 +70,11 @@ cd ../KLU
 make library
 INSTALL=$WORKSPACE/destdir/ make install
 
+echo "KLU Includes"
+ls $WORKSPACE/destdir/include
+echo "KLU Lib"
+ls $WORKSPACE/destdir/lib
+
 # Now the full Sundials build
 
 cd $WORKSPACE/srcdir/sundials-3.1.0/
@@ -77,9 +82,9 @@ mkdir build
 cd build
 
 if [ $target = i686-* ] -o [ $target = arm-* ]; then 
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON DKLU_INCLUDE_DIR=$WORKSPACE/srcdir/SuiteSparse/KLU/Include/ -DKLU_LIBRARY_DIR=$WORKSPACE/srcdir/SuiteSparse/lib -DSUNDIALS_INDEX_TYPE=int32_t ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON DKLU_INCLUDE_DIR=$WORKSPACE/srcdir/SuiteSparse/KLU/Include/ -DKLU_LIBRARY_DIR=$WORKSPACE/srcdir/SuiteSparse/lib ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" ..
 fi
 
 make -j8
