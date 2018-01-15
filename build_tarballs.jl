@@ -32,7 +32,7 @@ cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
 cd build
 
-if [ $target = "i686-w64-mingw32" ]; then
+if [ $target = i686-* ] -o [ $target = arm-* ]; then
 cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
 cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF ..
