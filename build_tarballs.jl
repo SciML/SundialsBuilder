@@ -2,9 +2,9 @@ using BinaryBuilder
 
 # These are the platforms built inside the wizard
 platforms = [
+  BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.Windows(:x86_64),
   BinaryProvider.Windows(:i686),
-  BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.MacOS(),
   BinaryProvider.Linux(:i686, :glibc),
   BinaryProvider.Linux(:aarch64, :glibc),
@@ -80,11 +80,26 @@ ls $WORKSPACE/destdir/lib
 cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
 cd build
+if [[ $target = *-w64-* ]]; then 
+EXT="dll"
+elif [[ $target = *-apple-* ]]; then 
+EXT="dylib"
+else
+EXT="so"
+fi
+echo hello
+echo $EXT
+echo $WORKSPACE
+echo $target
+echo hello
 
 if [ $target = i686-* ] -o [ $target = arm-* ]; then 
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t ..
+# cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR=$WORKSPACE/destdir/include/ -DKLU_LIBRARY_DIR=$WORKSPACE/destdir/lib -DSUNDIALS_INDEX_TYPE=int32_t ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DAMD_LIBRARY=$WORKSPACE/destdir/lib/libamd.$EXT -DKLU_LIBRARY=$WORKSPACE/destdir/lib/libklu.$EXT -DCOLAMD_LIBRARY=$WORKSPACE/destdir/lib/libcolamd.$EXT -DBTF_LIBRARY=$WORKSPACE/destdir/lib/libbtf.$EXT -DSUITESPARSECONFIG_LIBRARY=$WORKSPACE/destdir/lib/libsuitesparseconfig.$EXT -DSUNDIALS_INDEX_TYPE=int32_t ..
+
 else
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" ..
+# cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR=$WORKSPACE/destdir/include/ -DKLU_LIBRARY_DIR=$WORKSPACE/destdir/lib ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DAMD_LIBRARY=$WORKSPACE/destdir/lib/libamd.$EXT -DKLU_LIBRARY=$WORKSPACE/destdir/lib/libklu.$EXT -DCOLAMD_LIBRARY=$WORKSPACE/destdir/lib/libcolamd.$EXT -DBTF_LIBRARY=$WORKSPACE/destdir/lib/libbtf.$EXT -DSUITESPARSECONFIG_LIBRARY=$WORKSPACE/destdir/lib/libsuitesparseconfig.$EXT ..
 fi
 
 make -j8
