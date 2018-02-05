@@ -4,8 +4,8 @@ using BinaryBuilder
 platforms = [
   BinaryProvider.Windows(:x86_64),
   BinaryProvider.Windows(:i686),
-  BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.MacOS(),
+  BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.Linux(:i686, :glibc),
   BinaryProvider.Linux(:aarch64, :glibc),
   BinaryProvider.Linux(:armv7l, :glibc),
@@ -35,9 +35,9 @@ script = raw"""
 cd $WORKSPACE/srcdir
 cd SuiteSparse/SuiteSparse_config/
 cat > mk.patch <<'END'
---- SuiteSparse_config.mk
-+++ SuiteSparse_config.mk.new
-@@ -432,12 +432,13 @@
+--- SuiteSparse_config.mk.orig
++++ SuiteSparse_config.mk
+@@ -426,12 +426,13 @@
 
  SO_OPTS = $(LDFLAGS)
 
@@ -79,18 +79,38 @@ ls $WORKSPACE/destdir/lib
 
 cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
-cd build
+cd config
+cp FindKLU.cmake FindKLU.cmake.orig
+cat > file.patch <<'END'
+--- FindKLU.cmake.orig
++++ FindKLU.cmake
+@@ -61,9 +61,9 @@
+ if (NOT SUITESPARSECONFIG_LIBRARY)
+     set(SUITESPARSECONFIG_LIBRARY_NAME suitesparseconfig)
+     # NOTE: no prefix for this library on windows
+-    if (WIN32)
+-        set(CMAKE_FIND_LIBRARY_PREFIXES "")
+-    endif()
++#    if (WIN32)
++#        set(CMAKE_FIND_LIBRARY_PREFIXES "")
++#    endif()
+     FIND_LIBRARY( SUITESPARSECONFIG_LIBRARY ${SUITESPARSECONFIG_LIBRARY_NAME} ${KLU_LIBRARY_DIR} NO_DEFAULT_PATH)
+     mark_as_advanced(SUITESPARSECONFIG_LIBRARY)
+ endif ()
+END
+patch -l FindKLU.cmake.orig file.patch -o FindKLU.cmake
+cd ../build
 
 if [ $target = i686-* ] -o [ $target = arm-* ]; then 
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
 else
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" ..
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
 fi
 
 make -j8
 make install
 mkdir $WORKSPACE/destdir/bin
-mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
+cp -L $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
 
 """
 
