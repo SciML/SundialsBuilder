@@ -2,8 +2,8 @@ using BinaryBuilder
 
 # These are the platforms built inside the wizard
 platforms = [
-  BinaryProvider.Windows(:x86_64),
   BinaryProvider.Windows(:i686),
+  BinaryProvider.Windows(:x86_64),
   BinaryProvider.MacOS(),
   BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.Linux(:i686, :glibc),
@@ -34,6 +34,7 @@ script = raw"""
 
 cd $WORKSPACE/srcdir
 cd SuiteSparse/SuiteSparse_config/
+
 cat > mk.patch <<'END'
 --- SuiteSparse_config.mk.orig
 +++ SuiteSparse_config.mk
@@ -53,21 +54,39 @@ cat > mk.patch <<'END'
  else
      # Mac or Linux/Unix
 END
-
 patch -l SuiteSparse_config.mk < mk.patch
-make library
+
+cat > mk2.patch <<'END'
+--- SuiteSparse_config/SuiteSparse_config.h	2015-07-15 03:26:41.000000000 +0000
++++ SuiteSparse_config/SuiteSparse_config.h	2016-07-01 00:55:57.157465600 +0000
+@@ -54,7 +54,11 @@
+ #ifdef _WIN64
+ 
+ #define SuiteSparse_long __int64
++#ifdef _MSVC_VER
+ #define SuiteSparse_long_max _I64_MAX
++#else
++#define SuiteSparse_long_max LLONG_MAX
++#endif
+ #define SuiteSparse_long_idd "I64d"
+ 
+ #else
+END
+patch -l SuiteSparse_config.h < mk2.patch
+
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../AMD
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../COLAMD
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../BTF
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../KLU
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 
 echo "KLU Includes"
@@ -81,6 +100,7 @@ cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
 cd config
 cp FindKLU.cmake FindKLU.cmake.orig
+
 cat > file.patch <<'END'
 --- FindKLU.cmake.orig
 +++ FindKLU.cmake
@@ -101,10 +121,13 @@ END
 patch -l FindKLU.cmake.orig file.patch -o FindKLU.cmake
 cd ../build
 
-if [ $target = i686-* ] -o [ $target = arm-* ]; then 
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
+
+if [[ $target == i686-* ]] || [[ $target == arm-* ]]; then 
+echo "***   32-bit BUILD   ***"
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
+echo "***   64-bit BUILD   ***"
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
 fi
 
 make -j8
