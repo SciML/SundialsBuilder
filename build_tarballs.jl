@@ -2,10 +2,10 @@ using BinaryBuilder
 
 # These are the platforms built inside the wizard
 platforms = [
-  BinaryProvider.Windows(:x86_64),
   BinaryProvider.Windows(:i686),
-  BinaryProvider.Linux(:x86_64, :glibc),
+  BinaryProvider.Windows(:x86_64),
   BinaryProvider.MacOS(),
+  BinaryProvider.Linux(:x86_64, :glibc),
   BinaryProvider.Linux(:i686, :glibc),
   BinaryProvider.Linux(:aarch64, :glibc),
   BinaryProvider.Linux(:armv7l, :glibc),
@@ -34,10 +34,11 @@ script = raw"""
 
 cd $WORKSPACE/srcdir
 cd SuiteSparse/SuiteSparse_config/
+
 cat > mk.patch <<'END'
---- SuiteSparse_config.mk
-+++ SuiteSparse_config.mk.new
-@@ -432,12 +432,13 @@
+--- SuiteSparse_config.mk.orig
++++ SuiteSparse_config.mk
+@@ -426,12 +426,13 @@
 
  SO_OPTS = $(LDFLAGS)
 
@@ -53,21 +54,39 @@ cat > mk.patch <<'END'
  else
      # Mac or Linux/Unix
 END
-
 patch -l SuiteSparse_config.mk < mk.patch
-make library
+
+cat > mk2.patch <<'END'
+--- SuiteSparse_config/SuiteSparse_config.h	2015-07-15 03:26:41.000000000 +0000
++++ SuiteSparse_config/SuiteSparse_config.h	2016-07-01 00:55:57.157465600 +0000
+@@ -54,7 +54,11 @@
+ #ifdef _WIN64
+ 
+ #define SuiteSparse_long __int64
++#ifdef _MSVC_VER
+ #define SuiteSparse_long_max _I64_MAX
++#else
++#define SuiteSparse_long_max LLONG_MAX
++#endif
+ #define SuiteSparse_long_idd "I64d"
+ 
+ #else
+END
+patch -l SuiteSparse_config.h < mk2.patch
+
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../AMD
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../COLAMD
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../BTF
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 cd ../KLU
-make library
+make -j8 library
 INSTALL=$WORKSPACE/destdir/ make install
 
 echo "KLU Includes"
@@ -79,18 +98,42 @@ ls $WORKSPACE/destdir/lib
 
 cd $WORKSPACE/srcdir/sundials-3.1.0/
 mkdir build
-cd build
+cd config
+cp FindKLU.cmake FindKLU.cmake.orig
 
-if [ $target = i686-* ] -o [ $target = arm-* ]; then 
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DSUNDIALS_INDEX_TYPE=int32_t ..
+cat > file.patch <<'END'
+--- FindKLU.cmake.orig
++++ FindKLU.cmake
+@@ -61,9 +61,9 @@
+ if (NOT SUITESPARSECONFIG_LIBRARY)
+     set(SUITESPARSECONFIG_LIBRARY_NAME suitesparseconfig)
+     # NOTE: no prefix for this library on windows
+-    if (WIN32)
+-        set(CMAKE_FIND_LIBRARY_PREFIXES "")
+-    endif()
++#    if (WIN32)
++#        set(CMAKE_FIND_LIBRARY_PREFIXES "")
++#    endif()
+     FIND_LIBRARY( SUITESPARSECONFIG_LIBRARY ${SUITESPARSECONFIG_LIBRARY_NAME} ${KLU_LIBRARY_DIR} NO_DEFAULT_PATH)
+     mark_as_advanced(SUITESPARSECONFIG_LIBRARY)
+ endif ()
+END
+patch -l FindKLU.cmake.orig file.patch -o FindKLU.cmake
+cd ../build
+
+
+if [[ $target == i686-* ]] || [[ $target == arm-* ]]; then 
+echo "***   32-bit BUILD   ***"
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" ..
+echo "***   64-bit BUILD   ***"
+cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
 fi
 
 make -j8
 make install
 mkdir $WORKSPACE/destdir/bin
-mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
+cp -L $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
 
 """
 
