@@ -122,7 +122,7 @@ patch -l FindKLU.cmake.orig file.patch -o FindKLU.cmake
 cd ../build
 
 
-if [[ $target == i686-* ]] || [[ $target == arm-* ]]; then 
+if [[ ${nbits} == 32 ]]; then
 echo "***   32-bit BUILD   ***"
 cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" -DSUNDIALS_INDEX_TYPE=int32_t ..
 else
