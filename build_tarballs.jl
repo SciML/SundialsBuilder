@@ -2,7 +2,7 @@ using BinaryBuilder
 
 # Collection of sources required to build SundialsBuilder
 sources = [
-    "https://computation.llnl.gov/projects/sundials/download/sundials-3.1.0.tar.gz" =>
+    "https://computation.llnl.gov/projects/sundials/download/sundials-3.1.1.tar.gz" =>
     "18d52f8f329626f77b99b8bf91e05b7d16b49fde2483d3a0ea55496ce4cdd43a",
     "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.5.3.tar.gz" =>
     "6199a3a35fbce82b155fd2349cf81d2b7cddaf0dac218c08cb172f9bc143f37a",
@@ -92,6 +92,7 @@ products(prefix) = [
     LibraryProduct(prefix, "libsundials_sunlinsolspgmr", :libsundials_sunlinsolspgmr),
     LibraryProduct(prefix, "libsundials_sunlinsolpcg", :libsundials_sunlinsolpcg),
     LibraryProduct(prefix, "libsundials_sunlinsolsptfqmr", :libsundials_sunlinsolsptfqmr),
+    LibraryProduct(prefix, "libsundials_sunlinsolklu", :libsundials_sunlinsolklu),
     LibraryProduct(prefix, "libsundials_sunmatrixsparse", :libsundials_sunmatrixsparse),
     LibraryProduct(prefix, "libsundials_sunlinsolband", :libsundials_sunlinsolband),
     LibraryProduct(prefix, "libsundials_sunmatrixband", :libsundials_sunmatrixband),
