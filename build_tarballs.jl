@@ -1,93 +1,27 @@
 using BinaryBuilder
 
-# These are the platforms built inside the wizard
-platforms = [
-  BinaryProvider.Windows(:i686),
-  BinaryProvider.Windows(:x86_64),
-  BinaryProvider.MacOS(),
-  BinaryProvider.Linux(:x86_64, :glibc),
-  BinaryProvider.Linux(:i686, :glibc),
-  BinaryProvider.Linux(:aarch64, :glibc),
-  BinaryProvider.Linux(:armv7l, :glibc),
-  BinaryProvider.Linux(:powerpc64le, :glibc),
-]
-
-
-# If the user passed in a platform (or a few, comma-separated) on the
-# command-line, use that instead of our default platforms
-if length(ARGS) > 0
-    platforms = platform_key.(split(ARGS[1], ","))
-end
-info("Building for $(join(triplet.(platforms), ", "))")
-
 # Collection of sources required to build SundialsBuilder
 sources = [
     "https://computation.llnl.gov/projects/sundials/download/sundials-3.1.0.tar.gz" =>
     "18d52f8f329626f77b99b8bf91e05b7d16b49fde2483d3a0ea55496ce4cdd43a",
     "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.5.3.tar.gz" =>
     "6199a3a35fbce82b155fd2349cf81d2b7cddaf0dac218c08cb172f9bc143f37a",
+    "./patches",
 ]
 
+# Bash recipe for building across all platforms
 script = raw"""
-
 # SuiteSparse for KLU
+cd $WORKSPACE/srcdir/SuiteSparse*/
 
-cd $WORKSPACE/srcdir
-cd SuiteSparse/SuiteSparse_config/
+# Patches for windows build system
+patch -p0 < $WORKSPACE/srcdir/patches/SuiteSparse_windows.patch
 
-cat > mk.patch <<'END'
---- SuiteSparse_config.mk.orig
-+++ SuiteSparse_config.mk
-@@ -426,12 +426,13 @@
-
- SO_OPTS = $(LDFLAGS)
-
--ifeq ($(UNAME),Windows)
-+ifeq ($(UNAME),MSYS_NT-6.3)
-     # Cygwin Make on Windows (untested)
-     AR_TARGET = $(LIBRARY).lib
-     SO_PLAIN  = $(LIBRARY).dll
-     SO_MAIN   = $(LIBRARY).$(SO_VERSION).dll
-     SO_TARGET = $(LIBRARY).$(VERSION).dll
-+    SO_OPTS  += -shared -Wl,-soname -Wl,$(SO_MAIN) -Wl,--no-undefined
-     SO_INSTALL_NAME = echo
- else
-     # Mac or Linux/Unix
-END
-patch -l SuiteSparse_config.mk < mk.patch
-
-cat > mk2.patch <<'END'
---- SuiteSparse_config/SuiteSparse_config.h	2015-07-15 03:26:41.000000000 +0000
-+++ SuiteSparse_config/SuiteSparse_config.h	2016-07-01 00:55:57.157465600 +0000
-@@ -54,7 +54,11 @@
- #ifdef _WIN64
- 
- #define SuiteSparse_long __int64
-+#ifdef _MSVC_VER
- #define SuiteSparse_long_max _I64_MAX
-+#else
-+#define SuiteSparse_long_max LLONG_MAX
-+#endif
- #define SuiteSparse_long_idd "I64d"
- 
- #else
-END
-patch -l SuiteSparse_config.h < mk2.patch
-
-make -j8 library
-INSTALL=$WORKSPACE/destdir/ make install
-cd ../AMD
-make -j8 library
-INSTALL=$WORKSPACE/destdir/ make install
-cd ../COLAMD
-make -j8 library
-INSTALL=$WORKSPACE/destdir/ make install
-cd ../BTF
-make -j8 library
-INSTALL=$WORKSPACE/destdir/ make install
-cd ../KLU
-make -j8 library
-INSTALL=$WORKSPACE/destdir/ make install
+for proj in SuiteSparse_config AMD COLAMD BTF KLU; do
+    cd $WORKSPACE/srcdir/SuiteSparse/$proj
+    make -j${nproc} library
+    INSTALL=$WORKSPACE/destdir/ make install
+done
 
 echo "KLU Includes"
 ls $WORKSPACE/destdir/include
@@ -95,78 +29,82 @@ echo "KLU Lib"
 ls $WORKSPACE/destdir/lib
 
 # Now the full Sundials build
+cd $WORKSPACE/srcdir/sundials-*/
+patch -p0 < $WORKSPACE/srcdir/patches/Sundials_windows.patch
 
-cd $WORKSPACE/srcdir/sundials-3.1.0/
-mkdir build
-cd config
-cp FindKLU.cmake FindKLU.cmake.orig
-
-cat > file.patch <<'END'
---- FindKLU.cmake.orig
-+++ FindKLU.cmake
-@@ -61,9 +61,9 @@
- if (NOT SUITESPARSECONFIG_LIBRARY)
-     set(SUITESPARSECONFIG_LIBRARY_NAME suitesparseconfig)
-     # NOTE: no prefix for this library on windows
--    if (WIN32)
--        set(CMAKE_FIND_LIBRARY_PREFIXES "")
--    endif()
-+#    if (WIN32)
-+#        set(CMAKE_FIND_LIBRARY_PREFIXES "")
-+#    endif()
-     FIND_LIBRARY( SUITESPARSECONFIG_LIBRARY ${SUITESPARSECONFIG_LIBRARY_NAME} ${KLU_LIBRARY_DIR} NO_DEFAULT_PATH)
-     mark_as_advanced(SUITESPARSECONFIG_LIBRARY)
- endif ()
-END
-patch -l FindKLU.cmake.orig file.patch -o FindKLU.cmake
-cd ../build
-
-
-if [[ ${nbits} == 32 ]]; then
-echo "***   32-bit BUILD   ***"
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" -DSUNDIALS_INDEX_TYPE=int32_t ..
-else
-echo "***   64-bit BUILD   ***"
-cmake -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE=OFF -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR="$WORKSPACE/destdir/include/" -DKLU_LIBRARY_DIR="$WORKSPACE/destdir/lib" -DCMAKE_FIND_ROOT_PATH="$WORKSPACE/destdir" ..
+# On 64-bit, we need to patch the BLAS libraries to use the Julia name-mangling scheme.
+if [[ ${nbits} == 64 ]]; then
+    patch -p0 < $WORKSPACE/srcdir/patches/Sundials_ilp64.patch
 fi
 
-make -j8
-make install
-mkdir $WORKSPACE/destdir/bin
-cp -L $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin || true
+mkdir build
+cd build
 
+CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=${prefix} -DCMAKE_TOOLCHAIN_FILE=/opt/$target/$target.toolchain"
+CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Release -DEXAMPLES_ENABLE_C=OFF"
+CMAKE_FLAGS="${CMAKE_FLAGS} -DKLU_ENABLE=ON -DKLU_INCLUDE_DIR=\"$prefix/include/\" -DKLU_LIBRARY_DIR=\"$prefix/lib\""
+CMAKE_FLAGS="${CMAKE_FLAGS} -DBLAS_ENABLE=ON"
+
+if [[ ${nbits} == 32 ]]; then
+    echo "***   32-bit BUILD   ***"
+    LIBBLAS="$prefix/lib/libopenblas.so"
+    cmake ${CMAKE_FLAGS} -DBLAS_LIBRARIES=\"$LIBBLAS\" -DSUNDIALS_INDEX_TYPE=int32_t ..
+else
+    echo "***   64-bit BUILD   ***"
+    LIBBLAS="$prefix/lib/libopenblas64_.so"
+    cmake ${CMAKE_FLAGS} -DBLAS_LIBRARIES=\"$LIBBLAS\" ..
+fi
+
+make -j${nproc}
+make install
+
+# On windows, move all `.dll` files to `bin`
+if [[ ${target} == *-mingw32 ]]; then
+    mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin
+fi
 """
 
-products = prefix -> [
-    LibraryProduct(prefix,"libbtf"),
-    LibraryProduct(prefix,"libsundials_sunlinsolspfgmr"),
-    LibraryProduct(prefix,"libsundials_ida"),
-    LibraryProduct(prefix,"libsundials_cvode"),
-    LibraryProduct(prefix,"libsundials_cvodes"),
-    LibraryProduct(prefix,"libcolamd"),
-    LibraryProduct(prefix,"libsundials_sunmatrixdense"),
-    LibraryProduct(prefix,"libsundials_sunlinsolspbcgs"),
-    LibraryProduct(prefix,"libsundials_idas"),
-    LibraryProduct(prefix,"libsundials_nvecserial"),
-    LibraryProduct(prefix,"libsundials_sunlinsoldense"),
-    LibraryProduct(prefix,"libsundials_sunlinsolspgmr"),
-    LibraryProduct(prefix,"libsundials_sunlinsolpcg"),
-    LibraryProduct(prefix,"libsundials_sunlinsolsptfqmr"),
-    LibraryProduct(prefix,"libsundials_sunmatrixsparse"),
-    LibraryProduct(prefix,"libsundials_sunlinsolband"),
-    LibraryProduct(prefix,"libsundials_sunmatrixband"),
-    LibraryProduct(prefix,"libsundials_kinsol"),
-    LibraryProduct(prefix,"libsundials_arkode"),
-    LibraryProduct(prefix,"libklu"),
-    LibraryProduct(prefix,"libsuitesparseconfig"),
-    LibraryProduct(prefix,"libamd")
+# We attempt to build for all defined platforms
+platforms = [
+    BinaryProvider.Windows(:i686),
+    BinaryProvider.Windows(:x86_64),
+    BinaryProvider.MacOS(),
+    BinaryProvider.Linux(:x86_64, :glibc),
+    BinaryProvider.Linux(:i686, :glibc),
+    BinaryProvider.Linux(:aarch64, :glibc),
+    BinaryProvider.Linux(:armv7l, :glibc),
+    BinaryProvider.Linux(:powerpc64le, :glibc),
 ]
 
 
-# Build the given platforms using the given sources
-hashes = autobuild(pwd(), "Sundials", platforms, sources, script, products)
+products(prefix) = [
+    LibraryProduct(prefix, "libbtf", :libbtf),
+    LibraryProduct(prefix, "libsundials_sunlinsolspfgmr", :libsundials_sunlinsolspfgmr),
+    LibraryProduct(prefix, "libsundials_ida", :libsundials_ida),
+    LibraryProduct(prefix, "libsundials_cvode", :libsundials_cvode),
+    LibraryProduct(prefix, "libsundials_cvodes", :libsundials_cvodes),
+    LibraryProduct(prefix, "libcolamd", :libcolamd),
+    LibraryProduct(prefix, "libsundials_sunmatrixdense", :libsundials_sunmatrixdense),
+    LibraryProduct(prefix, "libsundials_sunlinsolspbcgs", :libsundials_sunlinsolspbcgs),
+    LibraryProduct(prefix, "libsundials_idas", :libsundials_idas),
+    LibraryProduct(prefix, "libsundials_nvecserial", :libsundials_nvecserial),
+    LibraryProduct(prefix, "libsundials_sunlinsoldense", :libsundials_sunlinsoldense),
+    LibraryProduct(prefix, "libsundials_sunlinsolspgmr", :libsundials_sunlinsolspgmr),
+    LibraryProduct(prefix, "libsundials_sunlinsolpcg", :libsundials_sunlinsolpcg),
+    LibraryProduct(prefix, "libsundials_sunlinsolsptfqmr", :libsundials_sunlinsolsptfqmr),
+    LibraryProduct(prefix, "libsundials_sunmatrixsparse", :libsundials_sunmatrixsparse),
+    LibraryProduct(prefix, "libsundials_sunlinsolband", :libsundials_sunlinsolband),
+    LibraryProduct(prefix, "libsundials_sunmatrixband", :libsundials_sunmatrixband),
+    LibraryProduct(prefix, "libsundials_kinsol", :libsundials_kinsol),
+    LibraryProduct(prefix, "libsundials_arkode", :libsundials_arkode),
+    LibraryProduct(prefix, "libklu", :libklu),
+    LibraryProduct(prefix, "libsuitesparseconfig", :libsuitesparseconfig),
+    LibraryProduct(prefix, "libamd", :libamd),
+]
 
-if !isempty(get(ENV,"TRAVIS_TAG",""))
-    print_buildjl(pwd(), products, hashes,
-        "https://github.com/JuliaDiffEq/SundialsBuilder/releases/download/$(ENV["TRAVIS_TAG"])")
-end
+dependencies = [
+    "https://github.com/staticfloat/OpenBLASBuilder/releases/download/v0.2.20-7/build.jl",
+]
+
+# Build the tarballs, and possibly a `build.jl` as well.
+build_tarballs(ARGS, "Sundials", sources, script, platforms, products, dependencies)
