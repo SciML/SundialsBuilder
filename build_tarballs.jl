@@ -3,7 +3,7 @@ using BinaryBuilder
 # Collection of sources required to build SundialsBuilder
 sources = [
     "https://computation.llnl.gov/projects/sundials/download/sundials-3.1.1.tar.gz" =>
-    "18d52f8f329626f77b99b8bf91e05b7d16b49fde2483d3a0ea55496ce4cdd43a",
+    "a24d643d31ed1f31a25b102a1e1759508ce84b1e4739425ad0e18106ab471a24",
     "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.5.3.tar.gz" =>
     "6199a3a35fbce82b155fd2349cf81d2b7cddaf0dac218c08cb172f9bc143f37a",
     "./patches",
