@@ -25,16 +25,15 @@ before_script:
 script:
   - julia build_tarballs.jl
 
-
 deploy:
     provider: releases
     api_key:
-        # Note; this api_key is only valid for tshort/SundialsBuilderTest; you need
+        # Note; this api_key is only valid for JuliaDiffEq/SundialsBuilder; you need
         # to make your own: https://docs.travis-ci.com/user/deployment/releases/
-        secure: uQ7c29P+3Ow0+KiA6uiS3hL9guCLGIX/Wp7uXTOSI2QYZkaJL0TfOBZyPUmsh8CbN629Jf4ccM6zo2taV4gJT4z8O0AfUNcX8YdxyN/P0zvxytio/GgMvDnIDWqGGNPSV6ttPlMxnexib1GoZVdAN5C4pnuzFpjpNsGRGYVQflpUBjBPc+QFGqs4My5er463MwYGbrK8OTTLKIFYjQxqMRUSOabmDbtykRsJFns5vYR4IPhRyO2Bp0ILXxsu92KqtNsBGQOdYs4Y1c8XYaMrB07GEi8z1BEkwZ0ASykYNU5YeOYzqQvkd0ZSr2kooHXTWkv/3nmu/hVMOHR0lVd+XaMWlcrTxY7iCdceE6DRUfJmRb8tCxnIXwt/aZZ/Boy+NpNNbHi0jS9p2QTtqD0Aj/HcMqTR4pKcjXVhT47kACSt1r1wWne8G35E/vrXqlG9fXDcdmVWoBmnE0qxU0nCCOtRiNYyeYfBVg9P0feJb5vun0bYHAcTb9tzTF/GNIRLv6bkv2flYEv2W/OlhtSQNJ4dDHTrLZe/hoL8XomDzbKm7wEl0vbdYW/BfBx59awPqMnSmCfmA8G1Uq6WBGRmPTR25dXK29lY/kIcheyEmHt49+eDqiYcphJAkkyjD1o+HGOafdIEfMHvtsIm1LocdD2SvzwbQ6E/BTXewDByDpU=
+        secure: Lor5OaMSvxagIdkH3ybwv/rjTgMDrlWAOG2wRL3B/T2llpImoGrOC+gLcuguqdR2dfqt9nmhsCi2x1LY0YPHZUJT4t6NiCNAxz3Y+/n1Rbdri8/iOvgWzYoiw2Ta3d7zg1gx77iTW7XqNzdDPr5nMmOgzlvDTOT0Ov6MYdQrURWBn5G6XnLoTmMRlkSNpBCkdrqY/ZIdTlaHRIgBUfgyzwzPSftyr+3eLLDX9OZ/wRz9sRu16KB474+xJ+Lg+aZ1zoOmljHiMohIpwhSEeWRiVIFMMx3y9gLkPfTQJsnnc3UkF7ofNeTGMKWOVaPq6jnA/X/tBX/IRfWXzd+iDpwn8tWE5h/KT4ebWPTdXfXDgUJtNdOfMZEO1cykuzfuNfynZ2QecpblsPJi9MfiwDcOFOvVrnLOn6oshjCVZptJs77RO3ciIpx4+LTVwPHyKYMp+iB+4BAos1N3UR9Lvp5CZo1kwuPzGQojWQsBTjeCKjhAjN5cC6ajcnlAxGtEAdPqDrboPmPkUkA+aZgGDmcWCMCgCi2rf3zRbhokibWRiBnDcXjx7NZfpOdXrPTVmwNU7A0vlF8k636TyeSysbFlGJHSCACiMI9hlh8JpqM7uuf1JGJP4in6Y53MQYgwRTK1+UB1SRFRsYsDHbenb5FRnRtOyxCu4g912VbVue3mew=
     file_glob: true
     file: products/*
     skip_cleanup: true
     on:
-        repo: JuliaDiffEq/SundialsBuilderTest
+        repo: JuliaDiffEq/SundialsBuilder
         tags: true
