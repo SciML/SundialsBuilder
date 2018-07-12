@@ -59,9 +59,12 @@ fi
 make -j${nproc}
 make install
 
-# On windows, move all `.dll` files to `bin`
+# On windows, move all `.dll` files to `bin`. We don't want to follow symlinks
+# because non-administrative users cannot create symlinks on Windows, so we
+# use `cp -L` followed by `rm` instead of just `mv`.
 if [[ ${target} == *-mingw32 ]]; then
-    mv $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin
+    cp -L $WORKSPACE/destdir/lib/*.dll $WORKSPACE/destdir/bin
+    rm -f $WORKSPACE/destdir/lib/*.dll
 fi
 """
 
